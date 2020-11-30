@@ -28,7 +28,7 @@ class AdaBoost:
         self.treeQuantity = treeQuantity
         self.classifiers = []
         self.TREE_DEPTH = 3
-        self.SPLITTER = 'random'
+        self.SPLITTER = 'best'
         self.CRITERION = 'entropy'
         self.objects = objects
         self.classes = list(map(getClass, classes))
@@ -43,7 +43,7 @@ class AdaBoost:
 
     def setClassifiers(self):
         weights = [1 / len(self.classes) for _ in range(len(self.classes))]
-        for t in range(self.treeQuantity):
+        for _ in range(self.treeQuantity):
             curClassifier = DecisionTreeClassifier(criterion=self.CRITERION, splitter=self.SPLITTER,
                                                    max_depth=self.TREE_DEPTH)
             curClassifier.fit(self.objects, self.classes, sample_weight=weights)
