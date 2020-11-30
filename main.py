@@ -1,3 +1,4 @@
+import copy
 import math
 
 import numpy
@@ -16,13 +17,21 @@ def weightsError(predicted, classes, weight):
     return error
 
 
+def getClass(cls):
+    if cls == 'P':
+        return 1
+    return -1
+
+
 class AdaBoost:
     def __init__(self, treeQuantity, objects, classes):
         self.treeQuantity = treeQuantity
         self.classifiers = []
-        self.TREE_DEPTH = 4
+        self.TREE_DEPTH = 3
+        self.SPLITTER = 'random'
+        self.CRITERION = 'entropy'
         self.objects = objects
-        self.classes = classes
+        self.classes = list(map(getClass, classes))
 
     class Classifier:
         def __init__(self, classifier, coef):
@@ -35,32 +44,27 @@ class AdaBoost:
     def setClassifiers(self):
         weights = [1 / len(self.classes) for _ in range(len(self.classes))]
         for t in range(self.treeQuantity):
-            curClassifier = DecisionTreeClassifier(max_depth=self.TREE_DEPTH)
+            curClassifier = DecisionTreeClassifier(criterion=self.CRITERION, splitter=self.SPLITTER,
+                                                   max_depth=self.TREE_DEPTH)
             curClassifier.fit(self.objects, self.classes, sample_weight=weights)
             predicted = curClassifier.predict(self.objects)
             error = weightsError(predicted, self.classes, weights)
             coef = 1 / 2 * math.log1p((1 - error) / error)
-            self.classifiers.append(self.Classifier(curClassifier, coef))
+            self.classifiers.append(self.Classifier(copy.deepcopy(curClassifier), coef))
             for i in range(len(weights)):
-                weights[i] = weights[i] * math.exp(-coef * self.classes[i] * predicted[i])
+                weights[i] *= math.exp(-coef * self.classes[i] * predicted[i])
             Z = sum(weights)
             for i in range(len(weights)):
-                weights[i] = weights[i] / Z
+                weights[i] /= Z
 
     def classify(self, obj):
         return numpy.sign(sum([self.classifiers[i].classify(obj) for i in range(len(self.classifiers))]))
 
     def getAccuracy(self):
-        def getClass(cls):
-            if cls == 'P':
-                return 1
-            else:
-                return -1
-
         counter = 0
-        for i in range(len(self.classes)):
-            predicted = numpy.sign(self.classify(self.objects[i]))
-            if predicted == getClass(self.classes[i]):
+        predicted = self.classify(self.objects)
+        for i in range(len(predicted)):
+            if predicted[i] == self.classes[i]:
                 counter += 1
         return 100 * counter / len(self.classes)
 
@@ -71,9 +75,9 @@ class AdaBoost:
                 xMin = obj[0]
             if obj[0] > xMax:
                 xMax = obj[0]
-            if obj[1] < xMin:
+            if obj[1] < yMin:
                 yMin = obj[1]
-            if obj[1] > xMax:
+            if obj[1] > yMax:
                 yMax = obj[1]
         return xMin, xMax, yMin, yMax
 
@@ -89,6 +93,7 @@ def main():
         index = 1
         for tQ in treeQuantity:
             curClassifier = AdaBoost(tQ, objects, classes)
+            curClassifier.setClassifiers()
             plotter.drawAda(name + ' ' + str(index), name + '/', curClassifier)
             accuracy.append(curClassifier.getAccuracy())
             index += 1

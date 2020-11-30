@@ -50,18 +50,19 @@ class Plotter:
         xMin, xMax, yMin, yMax = classifier.getMinMax()
         x, y = getBackgroundPoints(xMin, xMax, yMin, yMax)
         xPositive, yPositive, xNegative, yNegative = [], [], [], []
-        for (_x, _y) in zip(x, y):
-            predicted = classifier.classify((_x, _y))
-            if predicted == 1:
-                xPositive.append(_x)
-                yPositive.append(_y)
-            else:
-                xNegative.append(_x)
-                yNegative.append(_y)
+        for _x in x:
+            for _y in y:
+                predicted = classifier.classify([[_x, _y]])
+                if predicted == 1:
+                    xPositive.append(_x)
+                    yPositive.append(_y)
+                else:
+                    xNegative.append(_x)
+                    yNegative.append(_y)
 
         positivePointsX, positivePointsY, negativePointsX, negativePointsY = [], [], [], []
         for i in range(len(classifier.classes)):
-            if classifier.classes[i] == 'P':
+            if classifier.classes[i] == 1:
                 positivePointsX.append(classifier.objects[i][0])
                 positivePointsY.append(classifier.objects[i][1])
             else:
@@ -89,7 +90,7 @@ class Plotter:
         ax.plot(steps, accuracyes, color=self.accuracyColor)
         ax.set(title=name,
                xlabel='steps',
-               ylabel=accuracyes)
+               ylabel='accuracy')
         plt.show()
         createDir(path)
         fig.savefig(path + name)
